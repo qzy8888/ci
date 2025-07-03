@@ -1,0 +1,31 @@
+# azure-pipelines.yml
+
+trigger:
+  - main # Trigger on pushes to the main branch
+
+pool:
+  vmImage: 'ubuntu-latest' # Use a Microsoft-hosted agent
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Set up Python'
+  inputs:
+    versionSpec: '3.x' # Use the latest Python 3.x available
+
+- script: |
+    pip install -r requirements.txt
+  displayName: 'Install pytest'
+
+- script: |
+    pytest tests/ --junitxml=$(Build.ArtifactStagingDirectory)/test-results.xml
+  displayName: 'Run Unit Tests'
+  env:
+    PYTHONPATH: $(System.DefaultWorkingDirectory) # Crucial for importing 'notebooks' module
+
+- task: PublishTestResults@2
+  displayName: 'Publish Test Results'
+  inputs:
+    testResultsFormat: 'JUnit'
+    testResultsFiles: '$(Build.ArtifactStagingDirectory)/test-results.xml'
+    failTaskOnFailedTests: true
+  condition: succeededOrFailed()
